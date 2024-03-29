@@ -74,8 +74,8 @@ const int mode_MToG  = 0x2000;
 const int mode_three = 0x3000;
 
 int DAC_mode = mode_run;
+int csPin = 10;
 /////////////End SPI setup stuff///////////////
-int ssPin = 10;
 int potPin = A0;
 int potVal = 0;
 float potToVolt = 5.0/1023; //Conversion from pot value to V
@@ -84,7 +84,8 @@ char* msg = new char[50];
 
 void setup() {
 
-  pinMode(ssPin,OUTPUT);// ss pin as an output
+  pinMode(csPin,OUTPUT);// ss pin as an output
+  digitalWrite(csPin,HIGH);
   SPI.begin();
   Serial.begin(9600);
 
@@ -122,7 +123,7 @@ void loop() {
   OLED_show(msg);
 
   //Update DAC:
-  update_DAC(potVal); //potVal is a base 10 value 0->1023
+  update_DAC(potVal); //potVal is a 10 bit value 0->1023
 
 }
 
@@ -141,7 +142,7 @@ void OLED_show(char* msg){
 
 void update_DAC(int val){
   int to_send = val<<2 | DAC_mode;
-  digitalWrite(ssPin,LOW);
+  digitalWrite(csPin,LOW);
   SPI.transfer(to_send);
-  digitalWrite(ssPin,HIGH);
+  digitalWrite(csPin,HIGH);
 }
