@@ -67,6 +67,15 @@ static const unsigned char PROGMEM logo_bmp[] =
   0b00000000, 0b00110000 };
 /////////////End OLED setup stuff///////////////
 
+/////////////Begin SPI setup stuff///////////////
+const int mode_run   = 0x0000;
+const int mode_kToG  = 0x1000;
+const int mode_MToG  = 0x2000;
+const int mode_three = 0x3000;
+
+int DAC_mode = mode_run;
+/////////////End SPI setup stuff///////////////
+int ssPin = 10;
 int potPin = A0;
 int potVal = 0;
 float potToVolt = 5.0/1023; //Conversion from pot value to V
@@ -74,6 +83,9 @@ float volt = 0;
 char* msg = new char[50];
 
 void setup() {
+
+  pinMode(ssPin,OUTPUT);// ss pin as an output
+  SPI.begin();
   Serial.begin(9600);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -104,10 +116,14 @@ void loop() {
 
   
   // Report via serial connection:
-  Serial.println(msg);
+  //Serial.println(msg);
 
   //Display to OLED screen:
   OLED_show(msg);
+
+  //Update DAC:
+  update_DAC(potVal); //potVal is a base 10 value 0->1023
+
 }
 
 void OLED_show(char* msg){
@@ -121,4 +137,11 @@ void OLED_show(char* msg){
 
   display.print(msg);
   display.display();
+}
+
+void update_DAC(int val){
+  int to_send = val<<2 | DAC_mode;
+  digitalWrite(ssPin,LOW);
+  SPI.transfer(to_send);
+  digitalWrite(ssPin,HIGH);
 }
