@@ -8,7 +8,7 @@
 // I intend to apply this in my contribution to the class project
 // for Uwe Konopka's electronics course.
 //
-// v 0.01
+// v 0.02
 // working so far:
 //   - Use a potentiometer to select a voltage between 0 and 5 V
 //   - Report the selected voltage to a computer via serial (to be removed?)
