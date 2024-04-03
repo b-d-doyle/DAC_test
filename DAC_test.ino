@@ -68,16 +68,16 @@ static const unsigned char PROGMEM logo_bmp[] =
 /////////////End OLED setup stuff///////////////
 
 /////////////Begin SPI setup stuff///////////////
-const int mode_run   = 0x0000;
-const int mode_kToG  = 0x1000;
-const int mode_MToG  = 0x2000;
-const int mode_three = 0x3000;
+const uint16_t mode_run   = 0x0000;
+const uint16_t mode_kToG  = 0x1000;
+const uint16_t mode_MToG  = 0x2000;
+const uint16_t mode_three = 0x3000;
 
-int DAC_mode = mode_run;
+uint16_t DAC_mode = mode_run;
 int csPin = 10;
 /////////////End SPI setup stuff///////////////
 int potPin = A0;
-int potVal = 0;
+uint16_t potVal = 0;
 float potToVolt = 5.0/1023; //Conversion from pot value to V
 float volt = 0;
 char* msg = new char[50];
@@ -87,6 +87,7 @@ void setup() {
   pinMode(csPin,OUTPUT);// ss pin as an output
   digitalWrite(csPin,HIGH);
   SPI.begin();
+  SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE1));
   Serial.begin(9600);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -124,7 +125,7 @@ void loop() {
 
   //Update DAC:
   update_DAC(potVal); //potVal is a 10 bit value 0->1023
-
+  //delay(100);
 }
 
 void OLED_show(char* msg){
@@ -140,9 +141,18 @@ void OLED_show(char* msg){
   display.display();
 }
 
-void update_DAC(int val){
-  int to_send = val<<2 | DAC_mode;
+void update_DAC(uint16_t val){
+  //AD5310 protocol:
+  //int to_send = val<<2 | DAC_mode; 
+  //digitalWrite(csPin,LOW);
+  //SPI.transfer(to_send);
+  //digitalWrite(csPin,HIGH);
+
+  //DAC8531 protocol:
+  //uint8_t mode_8bit = DAC_mode >> 3;
+  uint8_t mode_8bit = 0x00;
   digitalWrite(csPin,LOW);
-  SPI.transfer(to_send);
+  SPI.transfer(mode_8bit);
+  SPI.transfer16(val<<6);
   digitalWrite(csPin,HIGH);
 }
