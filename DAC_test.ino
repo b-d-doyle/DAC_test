@@ -1,9 +1,9 @@
 /////////////////////////////////////////////////////////////////////
-// DAC_test v 0.01
+// DAC_test v 0.02
 // Brandon Doyle
 // 3/27/2024
 // 
-// Trying to get either the AD5310 or DAC8531 working.
+// Trying to get both the AD5310 or DAC8531 working.
 //
 // I intend to apply this in my contribution to the class project
 // for Uwe Konopka's electronics course.
@@ -13,8 +13,10 @@
 //   - Use a potentiometer to select a voltage between 0 and 5 V
 //   - Report the selected voltage to a computer via serial (to be removed?)
 //   - Display the selected voltage on an I2C OLED screen
+//   - Ask DAC8531 to output selected voltage
 // Not working yet:
-//   - Anything at all to do with the DAC, lol
+//   - Want to also be able to use AD5310
+//   - Read value from DAC and also display it on the OLED?
 //
 // Physical setup:
 // I'm using an Elegoo Uno R3 with the following pin connections:
@@ -46,6 +48,8 @@
 #define SCREEN_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+//Define a splash screen. This is the Adafruit logo. For the laser project,
+//I vote we replace this with a bmp of the Death Star.
 #define LOGO_HEIGHT   16
 #define LOGO_WIDTH    16
 static const unsigned char PROGMEM logo_bmp[] =
@@ -76,6 +80,7 @@ const uint16_t mode_three = 0x3000;
 uint16_t DAC_mode = mode_run;
 int csPin = 10;
 /////////////End SPI setup stuff///////////////
+
 int potPin = A0;
 uint16_t potVal = 0;
 float potToVolt = 5.0/1023; //Conversion from pot value to V
@@ -83,25 +88,29 @@ float volt = 0;
 char* msg = new char[50];
 
 void setup() {
-
-  pinMode(csPin,OUTPUT);// ss pin as an output
+  // SPI chip select pin should start HIGH:
+  pinMode(csPin,OUTPUT);
   digitalWrite(csPin,HIGH);
+
+  //SPI requires begin() and THEN beginTransaction()
   SPI.begin();
   SPI.beginTransaction(SPISettings(30000000, MSBFIRST, SPI_MODE1));
+
+  //Begin Serial for reporting to a computer's serial monitor:
   Serial.begin(9600);
 
+  //Begin I2C communication to the OLED screen:
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
     for(;;); // Don't proceed, loop forever
   }
 
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
+  // Show splash screen:
   display.display();
   delay(1000); // Pause for 1 second
 
-  // Clear the buffer
+  // Clear the OLED buffer
   display.clearDisplay();
 }
 
@@ -115,7 +124,6 @@ void loop() {
   // so I have to do it this weird way.
   msg = dtostrf(volt,5,2,msg);
   msg = strcat(msg," V\0");
-
   
   // Report via serial connection:
   //Serial.println(msg);
@@ -125,7 +133,6 @@ void loop() {
 
   //Update DAC:
   update_DAC(potVal); //potVal is a 10 bit value 0->1023
-  //delay(100);
 }
 
 void OLED_show(char* msg){
@@ -143,16 +150,15 @@ void OLED_show(char* msg){
 
 void update_DAC(uint16_t val){
   //AD5310 protocol:
-  //int to_send = val<<2 | DAC_mode; 
+  //uint16_t to_send = val<<2 | DAC_mode;
   //digitalWrite(csPin,LOW);
-  //SPI.transfer(to_send);
+  //SPI.transfer16(to_send);
   //digitalWrite(csPin,HIGH);
 
   //DAC8531 protocol:
-  //uint8_t mode_8bit = DAC_mode >> 3;
-  uint8_t mode_8bit = 0x00;
-  digitalWrite(csPin,LOW);
-  SPI.transfer(mode_8bit);
-  SPI.transfer16(val<<6);
-  digitalWrite(csPin,HIGH);
+  uint8_t mode_8bit = DAC_mode >> 12; //Translate mode byte to DAC8531 protocol
+  digitalWrite(csPin,LOW);            //Begin communication with Chip Select pin
+  SPI.transfer(mode_8bit);            //Transfer 8 bit mode byte
+  SPI.transfer16(val<<6);             //Transfer 16 bit value (bit-shifted from 10 bit)
+  digitalWrite(csPin,HIGH);           //End communication
 }
