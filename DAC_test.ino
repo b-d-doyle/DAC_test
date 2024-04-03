@@ -37,7 +37,7 @@
 
 /////////////Begin OLED setup stuff///////////////
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 32 // OLED display height, in pixels
+#define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 // The pins for I2C are defined by the Wire-library. 
@@ -138,10 +138,10 @@ void loop() {
 void OLED_show(char* msg){
   display.clearDisplay();
 
-  display.setTextSize(2);             // Double the normal 1:1 pixel scale
+  display.setTextSize(3);             // Double the normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);// Draw white text (monochrome board, but doesn't work without this)
-  display.setCursor(20,8);            // In pixels (x,y) from top left corner
-                                      // The top 8-ish pixels on my OLED are yellow
+  display.setCursor(0,16);            // In pixels (x,y) from top left corner
+                                      // The top 16-ish pixels on my OLED are yellow
                                       // and below that, they're blue.
 
   display.print(msg);
